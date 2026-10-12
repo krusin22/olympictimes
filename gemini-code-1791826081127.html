@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <!-- ตั้งค่า Viewport ป้องกันการซูมบนมือถือ/แท็บเล็ตเมื่อกดรัวๆ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>โอลิมปิกคณิตศาสตร์: วิ่งแข่งสูตรคูณ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            touch-action: manipulation; 
+            overflow: hidden;
+            background-color: #f0f9ff;
+        }
+        .track-bg {
+            background: repeating-linear-gradient(90deg, #e5e7eb, #e5e7eb 20px, #d1d5db 20px, #d1d5db 40px);
+        }
+        .runner {
+            transition: left 0.5s linear;
+        }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 md:p-6">
+
+    <div id="game-container" class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border-4 border-indigo-300">
+        
+        <!-- ================= หน้าเริ่มเกม ================= -->
+        <div id="start-screen" class="p-6 md:p-10 text-center space-y-5">
+            <div class="text-6xl md:text-7xl mb-2">🏅</div>
+            <h1 class="text-3xl md:text-5xl font-black text-indigo-700 tracking-wide">โอลิมปิกสูตรคูณ</h1>
+            <p class="text-gray-600 font-bold text-lg md:text-xl">เลือกระดับความเร็วของแชมป์เก่า!</p>
+            
+            <div class="grid grid-cols-2 gap-3 max-w-lg mx-auto">
+                <button onclick="selectDifficulty(0.4, 'ง่ายมาก')" class="diff-btn w-full bg-green-100 hover:bg-green-200 text-green-700 border-2 border-green-400 font-bold py-3 md:py-4 rounded-xl transition transform active:scale-95 text-lg md:text-xl">
+                    🐢 ง่ายมาก
+                </button>
+                <button onclick="selectDifficulty(0.8, 'ง่าย')" class="diff-btn w-full bg-teal-100 hover:bg-teal-200 text-teal-700 border-2 border-teal-400 font-bold py-3 md:py-4 rounded-xl transition transform active:scale-95 text-lg md:text-xl">
+                    🚶 ง่าย
+                </button>
+                <button onclick="selectDifficulty(1.5, 'สมดุล')" class="diff-btn col-span-2 w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border-2 border-blue-400 font-bold py-3 md:py-4 rounded-xl transition transform active:scale-95 text-lg md:text-xl ring-4 ring-indigo-400 scale-105">
+                    🏃 สมดุล (แนะนำ)
+                </button>
+                <button onclick="selectDifficulty(2.5, 'ยาก')" class="diff-btn w-full bg-orange-100 hover:bg-orange-200 text-orange-700 border-2 border-orange-400 font-bold py-3 md:py-4 rounded-xl transition transform active:scale-95 text-lg md:text-xl">
+                    ⚡ ยาก
+                </button>
+                <button onclick="selectDifficulty(3.5, 'ยากมาก')" class="diff-btn w-full bg-red-100 hover:bg-red-200 text-red-700 border-2 border-red-400 font-bold py-3 md:py-4 rounded-xl transition transform active:scale-95 text-lg md:text-xl">
+                    🚀 ยากมาก
+                </button>
+            </div>
+
+            <button onclick="startGame()" class="mt-4 w-full max-w-lg mx-auto bg-indigo-500 hover:bg-indigo-600 text-white font-black text-2xl py-4 md:py-5 rounded-2xl shadow-lg transition transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                <span>เริ่มวิ่ง!</span> 🏁
+            </button>
+        </div>
+
+        <!-- ================= หน้าเล่นเกม ================= -->
+        <div id="play-screen" class="hidden flex flex-col h-full">
+            <div class="bg-gray-800 p-4 md:p-6 relative border-b-8 border-white">
+                <div class="text-white flex justify-between mb-3 font-bold text-sm md:text-lg">
+                    <span>ระดับ: <span id="diff-label" class="text-yellow-400">สมดุล</span></span>
+                    <span id="hearts-display" class="tracking-widest">❤️❤️❤️❤️❤️</span>
+                </div>
+                
+                <div class="track-bg h-14 md:h-16 rounded-lg mb-3 relative overflow-hidden border-2 border-gray-600 shadow-inner">
+                    <div class="absolute right-0 h-full w-4 md:w-8 bg-red-500 opacity-50"></div>
+                    <div id="cpu-runner" class="runner absolute top-0 h-full text-4xl md:text-5xl flex items-center" style="left: 0%;">🤖</div>
+                </div>
+
+                <div class="track-bg h-14 md:h-16 rounded-lg relative overflow-hidden border-2 border-gray-600 shadow-inner">
+                    <div class="absolute right-0 h-full w-4 md:w-8 bg-green-500 opacity-50"></div>
+                    <div id="player-runner" class="runner absolute top-0 h-full text-4xl md:text-5xl flex items-center" style="left: 0%;">👦</div>
+                </div>
+            </div>
+
+            <div class="p-4 md:p-8 bg-white text-center flex-grow">
+                <h2 id="question-text" class="text-5xl md:text-7xl font-black text-gray-800 drop-shadow-sm mb-6 mt-2 md:mt-4">? x ? =</h2>
+                
+                <div id="choices-grid" class="grid grid-cols-2 gap-3 md:gap-5 max-w-md mx-auto">
+                    <!-- ปุ่มคำตอบจะแสดงตรงนี้ -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= หน้าจบเกม ================= -->
+        <div id="game-over-screen" class="hidden p-8 md:p-12 text-center space-y-6">
+            <div id="result-icon" class="text-7xl md:text-8xl mb-4">🏆</div>
+            <h2 id="result-title" class="text-4xl md:text-5xl font-extrabold text-gray-800">ยินดีด้วย!</h2>
+            <p id="result-desc" class="text-xl md:text-2xl text-gray-600 font-bold">หนูวิ่งเข้าเส้นชัยก่อนแชมป์เก่า!</p>
+            
+            <button onclick="location.reload()" class="w-full max-w-sm mx-auto bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xl md:text-2xl py-4 rounded-2xl shadow-lg transition transform hover:scale-105 active:scale-95 mt-6 block">
+                เล่นอีกครั้ง 🔄
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // ระบบเสียง (Web Audio API)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+        function playTone(freq, type, duration, vol=0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        function playCorrect() { playTone(600, 'sine', 0.1); setTimeout(() => playTone(800, 'sine', 0.15), 100); }
+        function playWrong() { playTone(250, 'square', 0.2, 0.05); }
+        function playWin() { [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.2), i * 150)); }
+        function playLose() { [300, 250, 200, 150].forEach((f, i) => setTimeout(() => playTone(f, 'sawtooth', 0.3, 0.05), i * 200)); }
+
+        // ตัวแปรควบคุมเกม
+        let cpuSpeed = 1.5; 
+        let cpuPos = 0;
+        let playerPos = 0;
+        let maxHearts = 5;
+        let currentHearts = maxHearts;
+        let currentAnswer = 0;
+        let gameLoop;
+        let isGameOver = false;
+
+        function selectDifficulty(speed, label) {
+            cpuSpeed = speed;
+            document.getElementById('diff-label').innerText = label;
+            // รีเซ็ตสไตล์ปุ่มทั้งหมด
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('ring-4', 'ring-indigo-400', 'scale-105'));
+            // ไฮไลต์ปุ่มที่ถูกเลือก
+            event.currentTarget.classList.add('ring-4', 'ring-indigo-400', 'scale-105');
+        }
+
+        function showScreen(id) {
+            ['start-screen', 'play-screen', 'game-over-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function updateHearts() {
+            document.getElementById('hearts-display').innerText = '❤️'.repeat(currentHearts) + '🖤'.repeat(maxHearts - currentHearts);
+        }
+
+        function startGame() {
+            initAudio();
+            cpuPos = 0; playerPos = 0;
+            currentHearts = maxHearts;
+            isGameOver = false;
+            
+            document.getElementById('cpu-runner').style.left = '0%';
+            document.getElementById('player-runner').style.left = '0%';
+            updateHearts();
+            
+            showScreen('play-screen');
+            nextQuestion();
+
+            // ลูประบบวิ่งของคอมพิวเตอร์
+            clearInterval(gameLoop);
+            gameLoop = setInterval(() => {
+                if (isGameOver) return;
+                cpuPos += cpuSpeed; 
+                if (cpuPos > 90) cpuPos = 90; 
+                document.getElementById('cpu-runner').style.left = cpuPos + '%';
+
+                if (cpuPos >= 90) {
+                    endGame(false, "แชมป์เก่าเข้าเส้นชัยไปก่อนแล้ว!");
+                }
+            }, 500);
+        }
+
+        function nextQuestion() {
+            if (isGameOver) return;
+            
+            const num1 = Math.floor(Math.random() * 11) + 2;
+            const num2 = Math.floor(Math.random() * 11) + 2;
+            currentAnswer = num1 * num2;
+            document.getElementById('question-text').innerText = `${num1} x ${num2} = ?`;
+
+            let choices = [currentAnswer];
+            while (choices.length < 4) {
+                let offset = (Math.floor(Math.random() * 4) + 1) * (Math.random() > 0.5 ? 1 : -1);
+                let wrong = currentAnswer + offset + (Math.random() > 0.5 ? num1 : num2);
+                if (wrong > 0 && !choices.includes(wrong)) choices.push(wrong);
+            }
+            choices.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('choices-grid');
+            grid.innerHTML = '';
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-white border-4 border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-black text-3xl md:text-5xl py-4 md:py-6 rounded-2xl shadow-sm transition transform active:scale-95 flex items-center justify-center';
+                btn.innerText = choice;
+                btn.onclick = () => checkAnswer(choice, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, btnElement) {
+            if (isGameOver) return;
+
+            if (selected === currentAnswer) {
+                playCorrect();
+                btnElement.classList.replace('border-indigo-200', 'border-green-500');
+                btnElement.classList.replace('text-indigo-700', 'text-green-600');
+                
+                playerPos += 10;
+                if (playerPos > 90) playerPos = 90;
+                document.getElementById('player-runner').style.left = playerPos + '%';
+
+                if (playerPos >= 90) {
+                    setTimeout(() => endGame(true, "หนูวิ่งเข้าเส้นชัยก่อนแชมป์เก่า!"), 300);
+                } else {
+                    setTimeout(nextQuestion, 250);
+                }
+            } else {
+                playWrong();
+                btnElement.classList.replace('border-indigo-200', 'border-red-500');
+                btnElement.classList.replace('text-indigo-700', 'text-red-500');
+                
+                currentHearts--;
+                updateHearts();
+                
+                const playerIcon = document.getElementById('player-runner');
+                playerIcon.classList.add('shake');
+                setTimeout(() => playerIcon.classList.remove('shake'), 400);
+
+                if (currentHearts <= 0) {
+                    setTimeout(() => endGame(false, "หัวใจหมดแล้ว พักเหนื่อยก่อนนะ"), 300);
+                } else {
+                    setTimeout(nextQuestion, 400);
+                }
+            }
+        }
+
+        function endGame(isWin, message) {
+            isGameOver = true;
+            clearInterval(gameLoop);
+            
+            showScreen('game-over-screen');
+            document.getElementById('result-title').innerText = isWin ? "ยอดเยี่ยม! ชนะแล้ว 🎉" : "เกมโอเวอร์! 😭";
+            document.getElementById('result-title').className = isWin ? "text-4xl md:text-5xl font-extrabold text-green-500" : "text-4xl md:text-5xl font-extrabold text-red-500";
+            document.getElementById('result-desc').innerText = message;
+            document.getElementById('result-icon').innerText = isWin ? "🏆" : "💨";
+
+            if (isWin) playWin(); else playLose();
+        }
+    </script>
+</body>
+</html>
